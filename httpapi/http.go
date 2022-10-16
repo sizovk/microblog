@@ -3,18 +3,14 @@ package httpapi
 import (
 	"fmt"
 	"github.com/gorilla/mux"
+	"microblog/storage"
 	"net/http"
 	"strings"
-	"sync"
 	"time"
 )
 
-func NewHTTPHandler() *HTTPHandler {
-	return &HTTPHandler{}
-}
-
 type HTTPHandler struct {
-	mu sync.RWMutex
+	storage storage.Storage
 }
 
 func HandleRoot(rw http.ResponseWriter, r *http.Request) {
@@ -56,10 +52,12 @@ func (h *HTTPHandler) HandleGetUserPosts(rw http.ResponseWriter, r *http.Request
 	rw.Header().Set("Content-Type", "plain/text")
 }
 
-func NewServer() *http.Server {
+func NewServer(storage storage.Storage) *http.Server {
 	r := mux.NewRouter()
 
-	handler := NewHTTPHandler()
+	handler := &HTTPHandler{
+		storage: storage,
+	}
 
 	r.HandleFunc("/", HandleRoot).Methods(http.MethodGet, http.MethodPost)
 	r.HandleFunc("/api/v1/posts", handler.HandleCreatePost).Methods(http.MethodPost)
