@@ -10,7 +10,7 @@ type Post struct {
 }
 
 type Storage interface {
-	CreatePost(ctx context.Context) (Post, error)
+	AddPost(ctx context.Context, post Post) error
 	GetPost(ctx context.Context, postId string) (Post, error)
-	GetPostsByUser(ctx context.Context, userId string) ([]Post, error)
+	GetPostsByUser(ctx context.Context, userId string, page string, size int) ([]Post, error)
 }
