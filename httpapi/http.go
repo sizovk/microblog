@@ -53,7 +53,7 @@ func (h *HTTPHandler) HandleCreatePost(rw http.ResponseWriter, r *http.Request) 
 		Id:        uuid.New().String(),
 		Text:      requestData.Text,
 		AuthorId:  userId,
-		CreatedAt: time.Now().String(),
+		CreatedAt: time.Now().UTC().Format(time.RFC3339),
 	}
 
 	err = h.storage.AddPost(r.Context(), post)
@@ -88,16 +88,13 @@ func (h *HTTPHandler) HandleGetUserPosts(rw http.ResponseWriter, r *http.Request
 	userId := strings.TrimPrefix(r.URL.Path, "/api/v1/users/")
 	userId = strings.TrimSuffix(userId, "/posts")
 
-	page := ""
-	queryPage, found := r.URL.Query()["page"]
-	if found {
-		page = queryPage[0]
-	}
+	page := r.URL.Query().Get("page")
 
 	size := DEFAULT_PAGE_SIZE
-	querySize, found := r.URL.Query()["size"]
-	if found {
-		size, err := strconv.Atoi(querySize[0])
+	querySize := r.URL.Query().Get("size")
+	if querySize != "" {
+		var err error
+		size, err = strconv.Atoi(querySize)
 		if err != nil || size < MINIMUM_PAGE_SIZE || size > MAXMIMUM_PAGE_SIZE {
 			http.Error(rw, err.Error(), http.StatusBadRequest)
 			return
