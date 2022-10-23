@@ -48,7 +48,7 @@ func (is *InmemoryStorage) GetPostsByUser(ctx context.Context, userId string, pa
 	postIds, found := is.userIdToPostIds[userId]
 	if !found {
 		if page == "" {
-			return storage.UserPosts{}, nil
+			return storage.UserPosts{Posts: []storage.Post{}}, nil
 		}
 		return storage.UserPosts{}, storage.ErrUserNotFound
 	}

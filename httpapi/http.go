@@ -7,6 +7,7 @@ import (
 	"github.com/gorilla/mux"
 	"microblog/storage"
 	"net/http"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -96,7 +97,7 @@ func (h *HTTPHandler) HandleGetUserPosts(rw http.ResponseWriter, r *http.Request
 		var err error
 		size, err = strconv.Atoi(querySize)
 		if err != nil || size < MINIMUM_PAGE_SIZE || size > MAXMIMUM_PAGE_SIZE {
-			http.Error(rw, err.Error(), http.StatusBadRequest)
+			http.Error(rw, "Некорректный запрос, например, из-за некорректного токена страницы.", http.StatusBadRequest)
 			return
 		}
 	}
@@ -104,7 +105,7 @@ func (h *HTTPHandler) HandleGetUserPosts(rw http.ResponseWriter, r *http.Request
 	posts, err := h.storage.GetPostsByUser(r.Context(), userId, page, size)
 
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusBadRequest)
+		http.Error(rw, "Некорректный запрос, например, из-за некорректного токена страницы.", http.StatusBadRequest)
 		return
 	}
 
@@ -126,9 +127,13 @@ func NewServer(storage storage.Storage) *http.Server {
 	r.HandleFunc("/api/v1/posts/{postId}", handler.HandleGetPost).Methods(http.MethodGet)
 	r.HandleFunc("/api/v1/users/{userId}/posts", handler.HandleGetUserPosts).Methods(http.MethodGet)
 
+	port := os.Getenv("SERVER_PORT")
+	if port == "" {
+		port = "8080"
+	}
 	server := &http.Server{
 		Handler:      r,
-		Addr:         "0.0.0.0:8080",
+		Addr:         "0.0.0.0:" + port,
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
 	}
