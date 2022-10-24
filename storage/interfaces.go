@@ -6,18 +6,20 @@ import (
 )
 
 type Post struct {
-	Id        string `json:"id"`
-	Text      string `json:"text"`
-	AuthorId  string `json:"authorId"`
-	CreatedAt string `json:"createdAt"`
+	Id        string `json:"id" bson:"_id"`
+	Text      string `json:"text" bson:"text"`
+	AuthorId  string `json:"authorId" bson:"authorId"`
+	CreatedAt string `json:"createdAt" bson:"createdAt"`
 }
 
 type UserPosts struct {
 	Posts    []Post `json:"posts"`
-	NextPage string `json:"nextPage,omitempty"`
+	NextPage string `json:"nextPage,omitempty" bson:"nextPage,omitempty"`
 }
 
 var (
+	ErrWrongPage    = errors.New("wrong_page")
+	ErrWrongAuthor  = errors.New("wrong_author")
 	ErrCollision    = errors.New("collision_error")
 	ErrPostNotFound = errors.New("post_not_found")
 	ErrUserNotFound = errors.New("user_not_found")

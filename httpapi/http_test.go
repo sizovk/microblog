@@ -1,22 +1,30 @@
 package httpapi
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/stretchr/testify/suite"
 	"io"
 	"log"
 	"microblog/storage"
-	"microblog/storage/inmemory"
+	"microblog/storage/mongo"
 	"net/http"
 	"strings"
 	"testing"
 )
 
+var ctx = context.Background()
+
 func TestAPI(t *testing.T) {
-	t.Run("InMemory", func(t *testing.T) {
+	//t.Run("InMemory", func(t *testing.T) {
+	//	suite.Run(t, &APISuite{
+	//		storage: inmemory.NewStorage(),
+	//	})
+	//})
+	t.Run("Mongo", func(t *testing.T) {
 		suite.Run(t, &APISuite{
-			storage: inmemory.NewStorage(),
+			storage: mongo.NewStorage("mongodb://localhost:27017", "test_mongo"),
 		})
 	})
 }
@@ -24,16 +32,21 @@ func TestAPI(t *testing.T) {
 type APISuite struct {
 	suite.Suite
 	storage storage.Storage
+	server  *http.Server
 	client  http.Client
 }
 
 func (s *APISuite) SetupSuite() {
-	server := NewServer(s.storage)
+	s.server = NewServer(s.storage, "0.0.0.0:8080")
 	go func() {
-		log.Printf("Start serving on %s", server.Addr)
-		log.Fatal(server.ListenAndServe())
+		log.Printf("Start serving on %s", s.server.Addr)
+		log.Fatal(s.server.ListenAndServe())
 	}()
 }
+
+//func (s *APISuite) TearDownSuite() {
+//	s.server.Shutdown(ctx)
+//}
 
 func (s *APISuite) TestNotFound() {
 

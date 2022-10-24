@@ -3,11 +3,10 @@ package httpapi
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/google/uuid"
 	"github.com/gorilla/mux"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"microblog/storage"
 	"net/http"
-	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -35,6 +34,15 @@ func HandleRoot(rw http.ResponseWriter, r *http.Request) {
 	rw.Header().Set("Content-Type", "plain/text")
 }
 
+func HandlePing(rw http.ResponseWriter, r *http.Request) {
+	_, err := rw.Write([]byte("Pong"))
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
+	rw.Header().Set("Content-Type", "plain/text")
+}
+
 func (h *HTTPHandler) HandleCreatePost(rw http.ResponseWriter, r *http.Request) {
 	var requestData CreatePostRequest
 	err := json.NewDecoder(r.Body).Decode(&requestData)
@@ -51,7 +59,7 @@ func (h *HTTPHandler) HandleCreatePost(rw http.ResponseWriter, r *http.Request) 
 	}
 
 	post := storage.Post{
-		Id:        uuid.New().String(),
+		Id:        primitive.NewObjectID().Hex(),
 		Text:      requestData.Text,
 		AuthorId:  userId,
 		CreatedAt: time.Now().UTC().Format(time.RFC3339),
@@ -115,7 +123,7 @@ func (h *HTTPHandler) HandleGetUserPosts(rw http.ResponseWriter, r *http.Request
 	_, _ = rw.Write(rawResponse)
 }
 
-func NewServer(storage storage.Storage) *http.Server {
+func NewServer(storage storage.Storage, address string) *http.Server {
 	r := mux.NewRouter()
 
 	handler := &HTTPHandler{
@@ -123,17 +131,14 @@ func NewServer(storage storage.Storage) *http.Server {
 	}
 
 	r.HandleFunc("/", HandleRoot).Methods(http.MethodGet, http.MethodPost)
+	r.HandleFunc("/maintenance/ping", HandlePing).Methods(http.MethodGet, http.MethodPost)
 	r.HandleFunc("/api/v1/posts", handler.HandleCreatePost).Methods(http.MethodPost)
 	r.HandleFunc("/api/v1/posts/{postId}", handler.HandleGetPost).Methods(http.MethodGet)
 	r.HandleFunc("/api/v1/users/{userId}/posts", handler.HandleGetUserPosts).Methods(http.MethodGet)
 
-	port := os.Getenv("SERVER_PORT")
-	if port == "" {
-		port = "8080"
-	}
 	server := &http.Server{
 		Handler:      r,
-		Addr:         "0.0.0.0:" + port,
+		Addr:         address,
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
 	}

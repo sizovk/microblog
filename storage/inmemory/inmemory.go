@@ -50,11 +50,17 @@ func (is *InmemoryStorage) GetPostsByUser(ctx context.Context, userId string, pa
 		if page == "" {
 			return storage.UserPosts{Posts: []storage.Post{}}, nil
 		}
-		return storage.UserPosts{}, storage.ErrUserNotFound
+		return storage.UserPosts{Posts: []storage.Post{}}, storage.ErrUserNotFound
 	}
 	startInd := len(postIds) - 1
 	if page != "" {
-		startInd = is.pageIdToOffset[page]
+		startInd, found = is.pageIdToOffset[page]
+		if !found {
+			return storage.UserPosts{Posts: []storage.Post{}}, storage.ErrWrongPage
+		}
+		if is.postIdToPost[page].AuthorId != userId {
+			return storage.UserPosts{Posts: []storage.Post{}}, storage.ErrWrongAuthor
+		}
 	}
 	lastInd := startInd - size
 	nextPage := ""
