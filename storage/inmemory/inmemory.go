@@ -76,3 +76,11 @@ func (is *InmemoryStorage) GetPostsByUser(ctx context.Context, userId string, pa
 	}
 	return storage.UserPosts{Posts: posts, NextPage: nextPage}, nil
 }
+
+func (is *InmemoryStorage) PatchPost(ctx context.Context, post storage.Post) error {
+	is.mu.Lock()
+	defer is.mu.Unlock()
+
+	is.postIdToPost[post.Id] = post
+	return nil
+}

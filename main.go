@@ -19,7 +19,7 @@ func getEnv(key, fallback string) string {
 func main() {
 	port := getEnv("SERVER_PORT", "8080")
 	address := "0.0.0.0:" + port
-	storageMode := getEnv("STORAGE_MODE", "mongo")
+	storageMode := getEnv("STORAGE_MODE", "inmemory")
 	var storageVar storage.Storage
 	if storageMode == "inmemory" {
 		storageVar = inmemory.NewStorage()

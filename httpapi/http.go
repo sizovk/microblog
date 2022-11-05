@@ -59,10 +59,11 @@ func (h *HTTPHandler) HandleCreatePost(rw http.ResponseWriter, r *http.Request) 
 	}
 
 	post := storage.Post{
-		Id:        primitive.NewObjectID().Hex(),
-		Text:      requestData.Text,
-		AuthorId:  userId,
-		CreatedAt: time.Now().UTC().Format(time.RFC3339),
+		Id:             primitive.NewObjectID().Hex(),
+		Text:           requestData.Text,
+		AuthorId:       userId,
+		CreatedAt:      time.Now().UTC().Format(time.RFC3339),
+		LastModifiedAt: time.Now().UTC().Format(time.RFC3339),
 	}
 
 	err = h.storage.AddPost(r.Context(), post)
@@ -123,6 +124,50 @@ func (h *HTTPHandler) HandleGetUserPosts(rw http.ResponseWriter, r *http.Request
 	_, _ = rw.Write(rawResponse)
 }
 
+func (h *HTTPHandler) HandlePatchPost(rw http.ResponseWriter, r *http.Request) {
+	var requestData CreatePostRequest
+	err := json.NewDecoder(r.Body).Decode(&requestData)
+	if err != nil {
+		http.Error(rw, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	userId := r.Header.Get("System-Design-User-Id")
+	re := regexp.MustCompile(`[A-Za-z0-9_\-]+`)
+	if !re.MatchString(userId) {
+		http.Error(rw, "Пользователь не аутентифирован", http.StatusUnauthorized)
+		return
+	}
+
+	postId := strings.TrimPrefix(r.URL.Path, "/api/v1/posts/")
+	post, err := h.storage.GetPost(r.Context(), postId)
+
+	if err != nil {
+		http.Error(rw, "Поста с указанным идентификатором не существует", http.StatusNotFound)
+		return
+	}
+
+	if post.AuthorId != userId {
+		http.Error(rw, "Пост не может быть отредактирован, т.к. опубликован другим пользователем.", http.StatusForbidden)
+		return
+	}
+
+	post.Text = requestData.Text
+	post.LastModifiedAt = time.Now().UTC().Format(time.RFC3339)
+
+	err = h.storage.PatchPost(r.Context(), post)
+
+	if err != nil {
+		http.Error(rw, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	rawResponse, _ := json.Marshal(post)
+
+	rw.Header().Set("Content-Type", "application/json")
+	_, _ = rw.Write(rawResponse)
+}
+
 func NewServer(storage storage.Storage, address string) *http.Server {
 	r := mux.NewRouter()
 
@@ -135,6 +180,7 @@ func NewServer(storage storage.Storage, address string) *http.Server {
 	r.HandleFunc("/api/v1/posts", handler.HandleCreatePost).Methods(http.MethodPost)
 	r.HandleFunc("/api/v1/posts/{postId}", handler.HandleGetPost).Methods(http.MethodGet)
 	r.HandleFunc("/api/v1/users/{userId}/posts", handler.HandleGetUserPosts).Methods(http.MethodGet)
+	r.HandleFunc("/api/v1/posts/{postId}", handler.HandlePatchPost).Methods(http.MethodPatch)
 
 	server := &http.Server{
 		Handler:      r,

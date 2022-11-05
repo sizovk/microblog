@@ -6,10 +6,11 @@ import (
 )
 
 type Post struct {
-	Id        string `json:"id" bson:"_id"`
-	Text      string `json:"text" bson:"text"`
-	AuthorId  string `json:"authorId" bson:"authorId"`
-	CreatedAt string `json:"createdAt" bson:"createdAt"`
+	Id             string `json:"id" bson:"_id"`
+	Text           string `json:"text" bson:"text"`
+	AuthorId       string `json:"authorId" bson:"authorId"`
+	CreatedAt      string `json:"createdAt" bson:"createdAt"`
+	LastModifiedAt string `json:"lastModifiedAt" bson:"lastModifiedAt"`
 }
 
 type UserPosts struct {
@@ -29,4 +30,5 @@ type Storage interface {
 	AddPost(ctx context.Context, post Post) error
 	GetPost(ctx context.Context, postId string) (Post, error)
 	GetPostsByUser(ctx context.Context, userId string, page string, size int) (UserPosts, error)
+	PatchPost(ctx context.Context, post Post) error
 }

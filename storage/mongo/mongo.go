@@ -104,3 +104,15 @@ func (ms *MongoStorage) GetPostsByUser(ctx context.Context, userId string, page 
 		return storage.UserPosts{Posts: posts}, nil
 	}
 }
+
+func (ms *MongoStorage) PatchPost(ctx context.Context, post storage.Post) error {
+	update := bson.D{
+		{"$set", bson.M{"text": post.Text}},
+		{"$set", bson.M{"lastModifiedAt": post.LastModifiedAt}},
+	}
+	_, err := ms.posts.UpdateByID(ctx, post.Id, update)
+	if err != nil {
+		return err
+	}
+	return nil
+}
